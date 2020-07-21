@@ -1,4 +1,4 @@
-import React, { useRef } from "react";
+import React, { useRef, useState } from "react";
 import {
   View,
   Text,
@@ -8,7 +8,8 @@ import {
   Dimensions
 } from "react-native";
 
-const Deck = ({ renderCard, data }) => {
+const Deck = ({ renderCard, data, onSwipeRight, onSwipeLeft,renderNoCards }) => {
+  const [indexValue,setIndexValue] = useState(0);
   const position = useRef(new Animated.ValueXY()).current;
   const screenDimensions = Dimensions.get("window").width;
   const swipeDimension = 0.25 * screenDimensions;
@@ -20,24 +21,32 @@ const Deck = ({ renderCard, data }) => {
       }
     }).start();
   };
-  const forceRightSwipe = () => {
+  const handleListWithSwipe = direction => {
+    console.log("inside handle ", direction);
+    
+    if (direction === "right") {
+      onSwipeRight(data[indexValue]);
+    } else {
+      onSwipeLeft(data[indexValue]);
+    }
+    position.setValue({ x: 0, y: 0 });
+    console.log(indexValue, "indexValue");
+    setIndexValue((indexValue)=> indexValue+ 1);
+  };
+  const forceSwipe = direction => {
+    const screenWidth =
+      direction === "right" ? screenDimensions : -screenDimensions;
     Animated.timing(position, {
       toValue: {
-        x: screenDimensions,
+        x: screenWidth,
         y: 0
       },
       duration: 250
+    }).start(() => {
+      handleListWithSwipe(direction);
     });
   };
-  const forceLeftSwipe = () => {
-    Animated.timing(position, {
-      toValue: {
-        x: -screenDimensions,
-        y: 0
-      },
-      duration: 250
-    });
-  };
+
   const panResponder = useRef(
     PanResponder.create({
       onStartShouldSetPanResponder: () => {
@@ -51,13 +60,13 @@ const Deck = ({ renderCard, data }) => {
         });
       },
       onPanResponderRelease: (event, gesture) => {
-        // console.log("Release ", gesture);
+        console.log(gesture.dx, swipeDimension);
         if (gesture.dx > swipeDimension) {
           console.log("swipe right success");
-          forceRightSwipe();
-        } else if (swipeDimension.dx < -swipeDimension) {
+          forceSwipe("right");
+        } else if (gesture.dx < -swipeDimension) {
           console.log("swipe left success");
-          forceLeftSwipe();
+          forceSwipe("left");
         } else {
           resetPosition();
         }
@@ -75,24 +84,40 @@ const Deck = ({ renderCard, data }) => {
     };
   };
   const renderCardList = () => {
+    console.log(indexValue,"hdgfkhfdljl")
+    if(indexValue>=data.length){
+      return renderNoCards()
+    }
     return data.map((item, index) => {
-      if (index === 0) {
+
+      if (index < indexValue) {
+        return null;
+      }
+      if (index === indexValue) {
         return (
           <Animated.View
             key={item.id}
             {...panResponder.panHandlers}
-            style={getCardStyle()}>
+            style={[getCardStyle(),styles.cardStyle]}>
             {renderCard(item)}
           </Animated.View>
         );
       }
-      return renderCard(item);
-    });
+      return <View key={item.id} style={[styles.cardStyle,{top:10*(index-indexValue)}]}>{renderCard(item)}</View>;
+    }).reverse();
   };
-  return <View>{renderCardList()}</View>;
+  return <View >{renderCardList()}</View>;
 };
 const styles = StyleSheet.create({
-  container: {}
+  cardStyle: {
+    position:"absolute",
+    left:0,
+    right:0
+  }
 });
+Deck.defaultProps = {
+  onSwipeRight: () => {},
+  onSwipeLeft: () => {}
+};
 
 export default Deck;

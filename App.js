@@ -57,9 +57,15 @@ export default function App() {
       <Button icon={{name:"code"}} backgroundColor="#03A9F4" title="View Now!"/>
     </Card>;
   };
+  const renderNoCards =()=>{
+    return <Card title="All cards Done" >
+    <Text style={styles.cardText} >No more cards</Text>
+    <Button icon={{name:"code"}} backgroundColor="#03A9F4" title=""/>
+  </Card>;
+  }
   return (
     <View style={styles.container}>
-      <Deck data={DATA} renderCard={renderCard} />
+      <Deck data={DATA} renderCard={renderCard} renderNoCards={renderNoCards} />
     </View>
   );
 }
